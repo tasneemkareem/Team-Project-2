@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/components/ui/use-toast";
 import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 
-const LoginPage = ({ onLogin }) => {
+
+const LoginPage = ({  onLogin }) => {
+  const [users, setUsers] = useState([]); // ← هنا بنخزن كل المستخدمين
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -16,16 +18,28 @@ const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+ useEffect(() => {
+    fetch("http://localhost:3000/users")
+      .then(response => response.json())
+      .then(data => {
+        setUsers(data); // ← تخزين البيانات في الحالة
+        console.log("Users from server:", data);
+      })
+      .catch(error => {
+        console.error("فشل جلب البيانات:", error);
+      });
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // await new Promise(resolve => setTimeout(resolve, 1000)); 
 
-    const users = JSON.parse(localStorage.getItem("smartTileUsers")) || [];
+    // const users = JSON.parse(localStorage.getItem("smartTileUsers")) || [];
     const user = users.find(u => u.email === email && u.password === password);
 
-    if (user) {
+if (user) {
       localStorage.setItem("smartTileUser", JSON.stringify({ email: user.email }));
       toast({
         title: "Login Successful!",
@@ -35,12 +49,15 @@ const LoginPage = ({ onLogin }) => {
       onLogin();
       navigate("/dashboard", { replace: true });
     } else {
+   
       toast({
         title: "Login Failed",
         description: "Invalid email or password. Please check your credentials.",
         variant: "destructive",
       });
     }
+
+
     setIsLoading(false);
   };
 
@@ -52,7 +69,7 @@ const LoginPage = ({ onLogin }) => {
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="w-full"
     >
-      <Card className="w-full max-w-md auth-form-container">
+      <Card className="w-full max-w-md auth-form-container" >
         <CardHeader className="text-center">
           <motion.div 
             initial={{ scale: 0.5, opacity: 0, y: -20 }}

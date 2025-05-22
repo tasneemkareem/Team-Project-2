@@ -25,7 +25,7 @@ const Footer = () => {
           transition={{ duration: 0.5, delay: 0.4 }} 
           className="mt-6 text-center text-xs text-muted-foreground/70"
         >
-          <span>Crafted by Ahmed Mohammed.</span>
+          <span>Crafted by Ahmed Hassan.</span>
         </motion.div>
       </div>
     </footer>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { UserPlus, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 const SignUpPage = ({ onSignUp }) => {
+   const [users, setUsers] = useState([]); // ← هنا بنخزن كل المستخدمين
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,6 +18,18 @@ const SignUpPage = ({ onSignUp }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+   useEffect(() => {
+      fetch("http://localhost:3000/users")
+        .then(response => response.json())
+        .then(data => {
+          setUsers(data); // ← تخزين البيانات في الحالة
+          console.log("Users from server:", data);
+        })
+        .catch(error => {
+          console.error("فشل جلب البيانات:", error);
+        });
+    }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,9 +51,8 @@ const SignUpPage = ({ onSignUp }) => {
     }
     setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    let users = JSON.parse(localStorage.getItem("smartTileUsers")) || [];
+
     if (users.find(u => u.email === email)) {
       toast({
         title: "Account Already Exists",
@@ -51,18 +63,45 @@ const SignUpPage = ({ onSignUp }) => {
       return;
     }
 
-    users.push({ email, password });
-    localStorage.setItem("smartTileUsers", JSON.stringify(users));
-    localStorage.setItem("smartTileUser", JSON.stringify({ email }));
+    try {
+      const response = await fetch("http://localhost:3000/add-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({  email, password })
+      });
 
-    toast({
-      title: "Account Created Successfully!",
-      description: "Welcome to SmartTile Analytics! Redirecting...",
-      className: "bg-primary text-primary-foreground"
-    });
-    onSignUp();
-    navigate("/dashboard", { replace: true });
+      const data = await response.json();
+
+      if (response.ok) {
+
+        toast({
+          title: "Account Created Successfully!",
+          description: "Welcome to SmartTile Analytics! Redirecting...",
+          className: "bg-primary text-primary-foreground"
+        });
+        onSignUp();
+        navigate("/dashboard", { replace: true });
+        setIsLoading(false);
+      } else {
+        toast({
+          title: "Signup Failed",
+          description: data.message || "Something went wrong.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Error",
+        description: "Could not connect to server.",
+        variant: "destructive"
+      });
+    }
+
     setIsLoading(false);
+
   };
 
   return (
@@ -75,7 +114,7 @@ const SignUpPage = ({ onSignUp }) => {
     >
       <Card className="w-full max-w-md auth-form-container">
         <CardHeader className="text-center">
-           <motion.div 
+          <motion.div
             initial={{ scale: 0.5, opacity: 0, y: -20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4, type: "spring", stiffness: 120 }}
@@ -90,7 +129,7 @@ const SignUpPage = ({ onSignUp }) => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <motion.div initial={{opacity:0, x: -20}} animate={{opacity:1, x: 0}} transition={{delay:0.2}}>
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
               <Label htmlFor="email-signup" className="text-foreground/90">Email Address</Label>
               <div className="relative mt-1">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -105,7 +144,7 @@ const SignUpPage = ({ onSignUp }) => {
                 />
               </div>
             </motion.div>
-            <motion.div initial={{opacity:0, x: -20}} animate={{opacity:1, x: 0}} transition={{delay:0.3}}>
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
               <Label htmlFor="password-signup" className="text-foreground/90">Password</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -128,7 +167,7 @@ const SignUpPage = ({ onSignUp }) => {
                 </button>
               </div>
             </motion.div>
-            <motion.div initial={{opacity:0, x: -20}} animate={{opacity:1, x: 0}} transition={{delay:0.4}}>
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
               <Label htmlFor="confirm-password-signup" className="text-foreground/90">Confirm Password</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -141,7 +180,7 @@ const SignUpPage = ({ onSignUp }) => {
                   required
                   className="pl-10 pr-10 text-foreground"
                 />
-                 <button
+                <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -151,7 +190,7 @@ const SignUpPage = ({ onSignUp }) => {
                 </button>
               </div>
             </motion.div>
-            <motion.div initial={{opacity:0, y: 20}} animate={{opacity:1, y: 0}} transition={{delay:0.5}}>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
               <Button type="submit" className="w-full font-semibold py-3 btn-primary-glow text-base" disabled={isLoading}>
                 {isLoading ? "Creating Account..." : "Sign Up & Get Started"}
               </Button>
